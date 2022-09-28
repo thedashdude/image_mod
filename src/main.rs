@@ -7,11 +7,12 @@ use image::{GenericImageView,Pixel};
 fn main() {
 	let args: Vec<String> = env::args().collect();
 	if args.len() < 3 || args.len() > 3 {
-		panic!("Wrong number of arguments")
+		panic!("Wrong number of arguments. Expected 3, received {}", args.len());
 	}
-	if args.len() == 3 
-	{
+	if args.len() == 3 {
 		println!("\n\n\n");
+
+		//Load the source and destination images safely
 		println!("Loading files...");
 		let file_name_source = &args[1];
 		let file_name_dest = &args[2];
@@ -22,9 +23,6 @@ fn main() {
 			return;
 		}
 		let img_src = img_dynamic_result.unwrap().to_rgb8();
-
-		let (width, height) = img_src.dimensions();
-		let _num_pixels: i64 = (width as i64) * (height as i64);
 
 
 
@@ -37,7 +35,7 @@ fn main() {
 
 		println!("Complete");
 
-		//Reading Stats
+		//Reading Stats from the source image
 		println!("\n\nReading stats from {}", file_name_source);
 
 		let (avg_l, sd_l) = get_dist_functional(&img_src, &get_luma);
@@ -48,7 +46,7 @@ fn main() {
 		println!("....Average (Chroma): {}", avg_c);
 		println!("....Standard Deviation (Chroma): {}", sd_c);
 
-		//Setting Stats
+		//Setting Stats on the destination image
 		println!("\n\nApplying Luma to {}", file_name_dest);
 
 		let (old_avg_l, old_sd_l) = get_dist_functional(&img_dest, &get_luma);
@@ -71,7 +69,7 @@ fn main() {
 		println!("....Set Standard Deviation (Chroma): {}", new_sd_c);
 
 
-
+		//Save altered destination image to a new file
 		println!("\n\nSaving to 'out.png'");
 		let save_result = img_dest.save("out.png");
 		if let Err(_) = save_result {
@@ -83,7 +81,7 @@ fn main() {
 	}
 }
 
-
+//Returns the mean and standard distribution of the statistic requested from an image 
 fn get_dist_functional<F>(img: & image::RgbImage, get_stat: F) -> (f32,f32) where
 	F: Fn(&image::Rgb<u8>) -> f32
 {
@@ -92,6 +90,7 @@ fn get_dist_functional<F>(img: & image::RgbImage, get_stat: F) -> (f32,f32) wher
 	(m,s)
 }
 
+//Applys the mean and standard distribution of the statistic given on an image (imperfect due to the forced bounding on (0..=255) of u8)
 fn apply_dist_functional<F,G>(img: &mut image::RgbImage, get_stat: F, set_stat: G, new_mean: f32, new_sd: f32) -> () where
 	F: Fn(&image::Rgb<u8>) -> f32, 
 	G: Fn(&mut image::Rgb<u8>, f32) -> ()
@@ -111,6 +110,7 @@ fn apply_dist_functional<F,G>(img: &mut image::RgbImage, get_stat: F, set_stat: 
 	}
 }
 
+//Returns the mean of the statistic requested from an image 
 fn get_stat_mean<F>(img: &image::RgbImage, get_stat: F) -> f32 where
 	F: Fn(&image::Rgb<u8>) -> f32
 {
@@ -128,6 +128,8 @@ fn get_stat_mean<F>(img: &image::RgbImage, get_stat: F) -> f32 where
 	let avg: f32 = col_avg_sum / (width as f32);
 	avg
 }
+
+//Returns the standard deviation of the statistic requested from an image 
 fn get_stat_sd<F>(img: &image::RgbImage, get_stat: F, mean: f32) -> f32 where
 	F: Fn(&image::Rgb<u8>) -> f32
 {
@@ -147,9 +149,12 @@ fn get_stat_sd<F>(img: &image::RgbImage, get_stat: F, mean: f32) -> f32 where
 	sd
 }
 
+
+//Get the Luma statistic of a pixel
 fn get_luma(pixel: &image::Rgb<u8>) -> f32 {
 	pixel.to_luma()[0] as f32
 }
+//Set the Luma statistic of a pixel
 fn set_luma(pixel: &mut image::Rgb<u8>, luma: f32) -> () {
 	let (r,g,b) = (pixel[0],pixel[1],pixel[2]);
 	let old_luma = get_luma(pixel);
@@ -158,11 +163,12 @@ fn set_luma(pixel: &mut image::Rgb<u8>, luma: f32) -> () {
 	*pixel = image::Rgb([adjust(r as f32) as u8,adjust(g as f32) as u8,adjust(b as f32) as u8]);
 }
 
-
+//Get the Chroma statistic of a pixel
 fn get_chroma(pixel: &image::Rgb<u8>) -> f32 {
 	let (r,g,b) = (pixel[0],pixel[1],pixel[2]);
 	(max_3_u8(r,g,b) - min_3_u8(r,g,b)) as f32
 }
+//Set the Chroma statistic of a pixel
 fn set_chroma(pixel: &mut image::Rgb<u8>, new_chroma: f32) -> () {
 	//Keeps the ratio (255-MAX : MIN - 0) the same
 	let (r,g,b) = (pixel[0],pixel[1],pixel[2]);
@@ -201,9 +207,12 @@ fn set_chroma(pixel: &mut image::Rgb<u8>, new_chroma: f32) -> () {
 	*pixel = image::Rgb([adjust(r as f32) as u8,adjust(g as f32) as u8,adjust(b as f32) as u8]);
 }
 
+
+//Return the max of 3 u8s
 fn max_3_u8(a: u8,b: u8,c: u8) -> u8 {
 	std::cmp::max(std::cmp::max(a,b),c)
 }
+//Return the min of 3 u8s
 fn min_3_u8(a: u8,b: u8,c: u8) -> u8 {
 	std::cmp::min(std::cmp::min(a,b),c)
 }
