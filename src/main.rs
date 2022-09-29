@@ -53,7 +53,7 @@ fn main() {
 		let img_src = img_dynamic_result.unwrap().to_rgb8();
 
 
-		println!("  Destination: {}",file_name_source);
+		println!("  Destination: {}",file_name_dest);
 		let img_dynamic_result = image::open(file_name_dest);
 		if let Err(_) = img_dynamic_result {
 			println!("Failed to open file '{}', terminating...", file_name_dest);
