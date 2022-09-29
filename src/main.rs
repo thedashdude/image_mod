@@ -5,40 +5,20 @@ use stat::{StandardDistribution,Stat,Luma,Chroma,Red,Green,Blue};
 
 const NUM_ARGS: usize = 4;
 
-fn user_apply_stat<T: Stat>(src: & image::RgbImage, img: &mut image::RgbImage) -> () {
-	println!("Applying stat <{}>",T::NAME);
-	println!("  Source:");
-	let src_dist: StandardDistribution = T::get_image_distribution(src);
-	println!("    Src Average ({}): {}",T::NAME, src_dist.mean);
-	println!("    Src Std.Dev ({}): {}",T::NAME, src_dist.sd);
-	println!("  Modified:");
-	let old_dist: StandardDistribution = T::get_image_distribution(img);
-	println!("    Old Average ({}): {}",T::NAME, old_dist.mean);
-	println!("    Old Std.Dev ({}): {}",T::NAME, old_dist.sd);
-
-	T::set_image_distribution(img, &src_dist);
-
-	let new_dist: StandardDistribution = T::get_image_distribution(img);
-	println!("    New Average ({}): {}",T::NAME, new_dist.mean);
-	println!("    New Std.Dev ({}): {}",T::NAME, new_dist.sd);
-	println!("\n\n");
-}
-
-
 fn main() {
 	let args: Vec<String> = env::args().collect();
 	if args.len() < NUM_ARGS || args.len() > NUM_ARGS {
 		panic!("Wrong number of arguments. Expected {}, received {}.", NUM_ARGS, args.len());
 	}
 	if args.len() == NUM_ARGS {
-		// RGB adjust???
 		println!("\n\n\n");
-
 		//Load the source and destination images safely
-		println!("Loading files...");
-		let file_name_source = &args[1];
-		let file_name_dest = &args[2];
+		let file_name_source: &String = &args[1];
+		let file_name_dest: &String = &args[2];
+		let commands: &String = &args[3].to_uppercase();
 
+		println!("Loading files...");
+		println!("  Source: {}",file_name_source);
 		let img_dynamic_result = image::open(file_name_source);
 		if let Err(_) = img_dynamic_result {
 			println!("Failed to open file '{}', terminating...", file_name_source);
@@ -47,7 +27,7 @@ fn main() {
 		let img_src = img_dynamic_result.unwrap().to_rgb8();
 
 
-
+		println!("  Destination: {}",file_name_source);
 		let img_dynamic_result = image::open(file_name_dest);
 		if let Err(_) = img_dynamic_result {
 			println!("Failed to open file '{}', terminating...", file_name_dest);
@@ -55,20 +35,29 @@ fn main() {
 		}
 		let mut img_dest = img_dynamic_result.unwrap().to_rgb8();
 
-		println!("Complete");
-
-		//Reading Stats from the source image
-		user_apply_stat::<Red>(&img_src,&mut img_dest);
-		user_apply_stat::<Green>(&img_src,&mut img_dest);
-		user_apply_stat::<Blue>(&img_src,&mut img_dest);
+		println!("\n\n");
+		println!("Running filters - {}...", commands);
+		for (i,c) in commands.chars().enumerate() {
+			println!("Filter {}/{} - {}",i+1,commands.len(),c);
+			match c {
+				'R' => user_apply_stat::<Red>(&img_src,&mut img_dest),
+				'G' => user_apply_stat::<Green>(&img_src,&mut img_dest),
+				'B' => user_apply_stat::<Blue>(&img_src,&mut img_dest),
+				'L' => user_apply_stat::<Luma>(&img_src,&mut img_dest),
+				'C' => user_apply_stat::<Chroma>(&img_src,&mut img_dest),
+				_ => println!("Unrecognized command {}",c),
+			}
+		} 
 
 		//Save altered destination image to a new file
-		println!("\n\nSaving to 'out.png'");
+		println!("Saving to 'out.png'...");
 		let save_result = img_dest.save("out.png");
 		if let Err(_) = save_result {
-			println!("Failed to save file, terminating...");
+			println!("  Failed to save file, terminating...");
 			return;
 		}
+		println!("  Done");
+
 
 		return;
 	}
@@ -142,4 +131,23 @@ fn main() {
 
 		return;
 	}
+}
+
+fn user_apply_stat<T: Stat>(src: & image::RgbImage, img: &mut image::RgbImage) -> () {
+	println!("Applying stat <{}>",T::NAME);
+	println!("  Source:");
+	let src_dist: StandardDistribution = T::get_image_distribution(src);
+	println!("    Src Average <{}>: {}",T::NAME, src_dist.mean);
+	println!("    Src Std.Dev <{}>: {}",T::NAME, src_dist.sd);
+	println!("  Destination:");
+	let old_dist: StandardDistribution = T::get_image_distribution(img);
+	println!("    Old Average <{}>: {}",T::NAME, old_dist.mean);
+	println!("    Old Std.Dev <{}>: {}",T::NAME, old_dist.sd);
+
+	T::set_image_distribution(img, &src_dist);
+
+	let new_dist: StandardDistribution = T::get_image_distribution(img);
+	println!("    New Average <{}>: {}",T::NAME, new_dist.mean);
+	println!("    New Std.Dev <{}>: {}",T::NAME, new_dist.sd);
+	println!("\n\n");
 }
