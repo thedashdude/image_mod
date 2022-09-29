@@ -1,5 +1,13 @@
 use image::{GenericImageView,Pixel};
 
+const num_hue_buckets: i32 = 360;
+
+
+
+pub struct StandardDistribution {
+	pub mean: f32,
+	pub sd: f32,
+}
 
 
 //Return the max of 3 u8s
@@ -17,11 +25,11 @@ pub trait Stat {
 	fn get(pixel: &image::Rgb<u8>) -> f32;
 	fn set(pixel: &mut image::Rgb<u8>, value: f32) -> ();
 	//Returns the mean and standard distribution of the statistic requested from an image 
-	fn get_image_distribution(img: & image::RgbImage) -> (f32,f32)
+	fn get_image_distribution(img: & image::RgbImage) -> StandardDistribution
 	{
 		let m = Self::get_image_mean(img);
 		let s = Self::get_image_sd(img, m);
-		(m,s)
+		StandardDistribution{ mean:m, sd: s}
 	}
 	fn get_image_mean(img: &image::RgbImage) -> f32 {
 		let (width, height) = img.dimensions();
@@ -54,14 +62,15 @@ pub trait Stat {
 		let sd: f32 = variance.sqrt();
 		sd
 	}
-	fn set_image_distribution(img: &mut image::RgbImage, new_mean: f32, new_sd: f32) -> ()
+	fn set_image_distribution(img: &mut image::RgbImage, new_distribution: &StandardDistribution) -> ()
 	{
-		let (old_mean, old_sd) = Self::get_image_distribution(&img);
+
+		let old_distribution: StandardDistribution = Self::get_image_distribution(&img);
 		//Naive approach
 		for (_x,_y,pixel) in img.enumerate_pixels_mut()
 		{
 			let old_stat = Self::get(pixel);
-			let new_stat: f32 = (old_stat - old_mean)/old_sd * new_sd + new_mean;
+			let new_stat: f32 = (old_stat - old_distribution.mean)/old_distribution.sd * new_distribution.sd + new_distribution.mean;
 			Self::set(pixel, new_stat);
 		}
 	}
@@ -127,5 +136,33 @@ impl Stat for Luma {
 		let ratio = value / old_luma;
 		let adjust = |x| {x * ratio};
 		*pixel = image::Rgb([adjust(r as f32) as u8,adjust(g as f32) as u8,adjust(b as f32) as u8]);
+	}
+}
+
+pub trait ColorIndex : Stat { 
+	const INDEX:u8 = 0;
+}
+
+pub struct Red;
+impl ColorIndex for Red {
+	const INDEX: u8 = 0;
+}
+pub struct Green;
+impl ColorIndex for Green {
+	const INDEX: u8 = 1;
+}
+pub struct Blue;
+impl ColorIndex for Blue {
+	const INDEX: u8 = 2;
+}
+
+impl<T> Stat for T where T: ColorIndex {
+	//Get the Luma statistic of a pixel
+	fn get(pixel: &image::Rgb<u8>) -> f32 {
+		pixel[Self::INDEX as usize] as f32
+	}
+	//Set the Luma statistic of a pixel
+	fn set(pixel: &mut image::Rgb<u8>, value: f32) -> () {
+		pixel[Self::INDEX as usize] = value as u8;
 	}
 }
