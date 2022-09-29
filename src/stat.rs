@@ -1,6 +1,6 @@
 use image::{GenericImageView,Pixel};
 
-const num_hue_buckets: i32 = 360;
+
 
 
 
@@ -22,6 +22,8 @@ fn min_3_u8(a: u8,b: u8,c: u8) -> u8 {
 
 
 pub trait Stat {
+	const NAME: &'static str;
+
 	fn get(pixel: &image::Rgb<u8>) -> f32;
 	fn set(pixel: &mut image::Rgb<u8>, value: f32) -> ();
 	//Returns the mean and standard distribution of the statistic requested from an image 
@@ -78,6 +80,7 @@ pub trait Stat {
 
 pub struct Chroma;
 impl Stat for Chroma {
+	const NAME: &'static str = "CHROMA";
 	//Get the Chroma statistic of a pixel
 	fn get(pixel: &image::Rgb<u8>) -> f32 {
 		let (r,g,b) = (pixel[0],pixel[1],pixel[2]);
@@ -125,6 +128,7 @@ impl Stat for Chroma {
 }
 pub struct Luma;
 impl Stat for Luma {
+	const NAME: &'static str = "LUMA";
 	//Get the Luma statistic of a pixel
 	fn get(pixel: &image::Rgb<u8>) -> f32 {
 		pixel.to_luma()[0] as f32
@@ -141,22 +145,29 @@ impl Stat for Luma {
 
 pub trait ColorIndex : Stat { 
 	const INDEX:u8 = 0;
+	const COLOR_NAME: &'static str;
 }
 
 pub struct Red;
 impl ColorIndex for Red {
 	const INDEX: u8 = 0;
+	const COLOR_NAME: &'static str = "RED";
 }
+
 pub struct Green;
 impl ColorIndex for Green {
 	const INDEX: u8 = 1;
+	const COLOR_NAME: &'static str = "GREEN";
 }
+
 pub struct Blue;
 impl ColorIndex for Blue {
 	const INDEX: u8 = 2;
+	const COLOR_NAME: &'static str = "BLUE";
 }
 
 impl<T> Stat for T where T: ColorIndex {
+	const NAME: &'static str = T::COLOR_NAME;
 	//Get the Luma statistic of a pixel
 	fn get(pixel: &image::Rgb<u8>) -> f32 {
 		pixel[Self::INDEX as usize] as f32
