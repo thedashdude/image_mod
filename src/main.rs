@@ -3,19 +3,45 @@ mod stat;
 use std::env;
 use stat::{StandardDistribution,Stat,Luma,Chroma,Red,Green,Blue};
 
-const NUM_ARGS: usize = 4;
+const MIN_ARGS: usize = 4;
+const MAX_ARGS: usize = 5;
 
 fn main() {
 	let args: Vec<String> = env::args().collect();
-	if args.len() < NUM_ARGS || args.len() > NUM_ARGS {
-		panic!("Wrong number of arguments. Expected {}, received {}.", NUM_ARGS, args.len());
+	if (args.len() == 2 && args[1].to_uppercase().eq("HELP")) || args.len() < 2 {
+		println!("\nHELP\n----");
+		println!("  Format");
+		println!("  ------");
+		println!("    file1 file2 filters [file3=out.png]");
+		println!("\n  Arguments");
+		println!("  ---------");
+		println!("    file1   - location of image to read filters from.");
+		println!("    file2   - location of image to alter.");
+		println!("    filters - String composed using characters from the set (R,G,B,L,C), where case doesn't matter.");
+		println!("    file3   - OPTIONAL location to save altered image. Defaults to 'out.png'.");
+		println!("\n  Filters");
+		println!("  -------");
+		println!("    R - Red: Amount of red");
+		println!("    G - Green: Amount of green");
+		println!("    B - Blue: Amount of blue");
+		println!("    L - Luma: Brightness of color");
+		println!("    C - Chroma: Vibrancy of color");
+		return;
 	}
-	if args.len() == NUM_ARGS {
+	else if args.len() < MIN_ARGS || args.len() > MAX_ARGS {
+		println!("Wrong number of arguments. Expected {} to {}, received {}.\nTry `cargo run help` or `cargo run`.", MIN_ARGS, MAX_ARGS, args.len());
+		return;
+	}
+	else if args.len() >= MIN_ARGS && args.len() <= MAX_ARGS {
 		println!("\n\n\n");
 		//Load the source and destination images safely
 		let file_name_source: &String = &args[1];
 		let file_name_dest: &String = &args[2];
 		let commands: &String = &args[3].to_uppercase();
+		let mut file_name_save: &String = &String::from("out.png");
+		if args.len() == 5 {
+			file_name_save = &args[4];
+		}
 
 		println!("Loading files...");
 		println!("  Source: {}",file_name_source);
@@ -50,84 +76,14 @@ fn main() {
 		} 
 
 		//Save altered destination image to a new file
-		println!("Saving to 'out.png'...");
-		let save_result = img_dest.save("out.png");
+		println!("Saving to '{}'...", file_name_save);
+		let save_result = img_dest.save(file_name_save);
 		if let Err(_) = save_result {
 			println!("  Failed to save file, terminating...");
 			return;
 		}
 		println!("  Done");
 
-
-		return;
-	}
-	if args.len() == 3 {
-		println!("\n\n\n");
-
-		//Load the source and destination images safely
-		println!("Loading files...");
-		let file_name_source = &args[1];
-		let file_name_dest = &args[2];
-
-		let img_dynamic_result = image::open(file_name_source);
-		if let Err(_) = img_dynamic_result {
-			println!("Failed to open file '{}', terminating...", file_name_source);
-			return;
-		}
-		let img_src = img_dynamic_result.unwrap().to_rgb8();
-
-
-
-		let img_dynamic_result = image::open(file_name_dest);
-		if let Err(_) = img_dynamic_result {
-			println!("Failed to open file '{}', terminating...", file_name_dest);
-			return;
-		}
-		let mut img_dest = img_dynamic_result.unwrap().to_rgb8();
-
-		println!("Complete");
-
-		//Reading Stats from the source image
-		println!("\n\nReading stats from {}", file_name_source);
-
-		let dist_luma: StandardDistribution = Luma::get_image_distribution(&img_src);
-		println!("....Average (Luma): {}", dist_luma.mean);
-		println!("....Standard Deviation (Luma): {}", dist_luma.sd);
-
-		let dist_chroma: StandardDistribution = Chroma::get_image_distribution(&img_src);
-		println!("....Average (Chroma): {}", dist_chroma.mean);
-		println!("....Standard Deviation (Chroma): {}", dist_chroma.sd);
-
-		//Setting Stats on the destination image
-		println!("\n\nApplying Luma to {}", file_name_dest);
-
-		let dist_luma_old: StandardDistribution = Luma::get_image_distribution(&img_dest);
-		println!("....Old Average (Luma): {}", dist_luma_old.mean);
-		println!("....Old Standard Deviation (Luma): {}", dist_luma_old.sd);
-
-		Luma::set_image_distribution(&mut img_dest, &dist_luma); //(&mut img_dest,avg,sd);
-		let dist_luma_new: StandardDistribution = Luma::get_image_distribution(&img_dest);
-		println!("....Set Average (Luma): {}", dist_luma_new.mean);
-		println!("....Set Standard Deviation (Luma): {}", dist_luma_new.sd);
-
-		println!("Applying Chroma to {}", file_name_dest);
-		let dist_chroma_old: StandardDistribution = Chroma::get_image_distribution(&img_dest);
-		println!("....Old Average (Chroma): {}", dist_chroma_old.mean);
-		println!("....Old Standard Deviation (Chroma): {}", dist_chroma_old.sd);
-
-		Chroma::set_image_distribution(&mut img_dest, &dist_chroma); //(&mut img_dest,avg,sd);
-		let dist_chroma_new: StandardDistribution = Chroma::get_image_distribution(&img_dest);
-		println!("....Set Average (Chroma): {}", dist_chroma_new.mean);
-		println!("....Set Standard Deviation (Chroma): {}", dist_chroma_new.sd);
-
-
-		//Save altered destination image to a new file
-		println!("\n\nSaving to 'out.png'");
-		let save_result = img_dest.save("out.png");
-		if let Err(_) = save_result {
-			println!("Failed to save file, terminating...");
-			return;
-		}
 
 		return;
 	}
