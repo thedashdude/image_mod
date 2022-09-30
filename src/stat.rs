@@ -98,6 +98,13 @@ impl Stat for Chroma {
 
 		
 		let mut new_gap = 255.0-value;
+		if new_gap > 254.0 {
+			new_gap = 255.0;
+		}
+		if new_gap == 255.0 && old_gap == 0.0 {
+			return;
+		}
+
 		//If the ratio is undefined, just fudge it a bit
 		if old_gap == 0.0 {
 			max -= 1.0;
@@ -137,7 +144,14 @@ impl Stat for Luma {
 	fn set(pixel: &mut image::Rgb<u8>, value: f32) -> () {
 		let (r,g,b) = (pixel[0],pixel[1],pixel[2]);
 		let old_luma = Self::get(pixel);
-		let ratio = value / old_luma;
+		let mut ratio: f32 = value / old_luma;
+		if ratio < 0.0 {
+			ratio = 0.0;
+		}
+		if old_luma == 0.0 {
+			ratio = value;
+			*pixel = image::Rgb([1 as u8,1 as u8,1 as u8]);
+		}
 		let adjust = |x| {x * ratio};
 		*pixel = image::Rgb([adjust(r as f32) as u8,adjust(g as f32) as u8,adjust(b as f32) as u8]);
 	}
