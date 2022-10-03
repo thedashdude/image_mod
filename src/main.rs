@@ -61,6 +61,7 @@ fn main() {
 		}
 		let mut img_dest = img_dynamic_result.unwrap().to_rgb8();
 
+		//Run the requested filters
 		println!("\n\n");
 		println!("Running filters - {}...", commands);
 		for (i,c) in commands.chars().enumerate() {
@@ -89,6 +90,7 @@ fn main() {
 	}
 }
 
+//Apply the distribution of a statistic to an image, with output for the user
 fn user_apply_stat<T: Stat>(src: & image::RgbImage, img: &mut image::RgbImage) -> () {
 	println!("Applying stat <{}>",T::NAME);
 	println!("  Source:");

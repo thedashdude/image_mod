@@ -3,7 +3,7 @@ use image::{GenericImageView,Pixel};
 
 
 
-
+//Hold the mean and standart distribution of some statistic
 pub struct StandardDistribution {
 	pub mean: f32,
 	pub sd: f32,
@@ -20,7 +20,7 @@ fn min_3_u8(a: u8,b: u8,c: u8) -> u8 {
 }
 
 
-
+//Generalized statistic trait, implements getting and setting a distribution from generalized get() and set() functions.
 pub trait Stat {
 	const NAME: &'static str;
 
@@ -33,6 +33,7 @@ pub trait Stat {
 		let s = Self::get_image_sd(img, m);
 		StandardDistribution{ mean:m, sd: s}
 	}
+	//Returns the mean
 	fn get_image_mean(img: &image::RgbImage) -> f32 {
 		let (width, height) = img.dimensions();
 		let mut col_avg_sum: f32 = 0.0;
@@ -48,6 +49,7 @@ pub trait Stat {
 		let avg: f32 = col_avg_sum / (width as f32);
 		avg
 	}
+	//Returns the standard distribution
 	fn get_image_sd(img: &image::RgbImage, mean: f32) -> f32 {
 		let (width, height) = img.dimensions();
 		let mut dev_avg_sum: f32 = 0.0;
@@ -64,6 +66,7 @@ pub trait Stat {
 		let sd: f32 = variance.sqrt();
 		sd
 	}
+	//Sets the new distribution of an image by setting all values x to (x - X)/s * s' + X'
 	fn set_image_distribution(img: &mut image::RgbImage, new_distribution: &StandardDistribution) -> ()
 	{
 
@@ -78,6 +81,8 @@ pub trait Stat {
 	}
 }
 
+
+//Chroma Stat, the colorfulness of the pixel
 pub struct Chroma;
 impl Stat for Chroma {
 	const NAME: &'static str = "CHROMA";
@@ -88,7 +93,10 @@ impl Stat for Chroma {
 	}
 	//Set the Chroma statistic of a pixel
 	fn set(pixel: &mut image::Rgb<u8>, value: f32) -> () {
-		//Keeps the ratio (255-MAX : MIN - 0) the same
+
+		//Keeps the ratio (255-MAX : MIN - 0) the same, if possible
+		//If not, makes small adjustments so it is possible
+
 		let (r,g,b) = (pixel[0],pixel[1],pixel[2]);
 		let mut max = max_3_u8(r,g,b) as f32;
 		let mut min = min_3_u8(r,g,b) as f32;
@@ -96,7 +104,7 @@ impl Stat for Chroma {
 		let mut old_gap = 255.0-old_chroma;
 		
 
-		
+		//Prevent awkward values
 		let mut new_gap = 255.0-value;
 		if new_gap > 254.0 {
 			new_gap = 255.0;
@@ -133,6 +141,8 @@ impl Stat for Chroma {
 	}
 
 }
+
+//Luma Stat, the brightness of the pixel
 pub struct Luma;
 impl Stat for Luma {
 	const NAME: &'static str = "LUMA";
@@ -145,6 +155,7 @@ impl Stat for Luma {
 		let (r,g,b) = (pixel[0],pixel[1],pixel[2]);
 		let old_luma = Self::get(pixel);
 		let mut ratio: f32 = value / old_luma;
+		//Prevent awkward values
 		if ratio < 0.0 {
 			ratio = 0.0;
 		}
@@ -157,6 +168,7 @@ impl Stat for Luma {
 	}
 }
 
+//Generalizes Indexing the pixel to read the R,G, and B values as statistics
 pub trait ColorIndex { 
 	const INDEX:u8 = 0;
 	const COLOR_NAME: &'static str;
@@ -180,6 +192,7 @@ impl ColorIndex for Blue {
 	const COLOR_NAME: &'static str = "BLUE";
 }
 
+//Implements get() and set() for Red, Blue, and Green values of pixels.
 impl<T> Stat for T where T: ColorIndex {
 	const NAME: &'static str = T::COLOR_NAME;
 
@@ -190,21 +203,3 @@ impl<T> Stat for T where T: ColorIndex {
 		pixel[Self::INDEX as usize] = value as u8;
 	}
 }
-
-/*
-pub trait Distance {
-	const POINT: (u8,u8,u8);
-	const COLOR_NAME: &'static str;
-	fn get_distance(pixel: &image::Rgb<u8>) -> f32 {
-		pixel[Self::INDEX as usize] as f32
-	}
-}
-pub struct RedDistance;
-impl Distance for RedDistance {
-	const POINT: (u8,u8,u8) = (255,0,0);
-	const COLOR_NAME: &'static str = "Red Distance";
-}
-impl Stat for RedDistance {
-	//based on Distance::
-}
-*/
