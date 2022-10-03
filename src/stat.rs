@@ -157,7 +157,7 @@ impl Stat for Luma {
 	}
 }
 
-pub trait ColorIndex : Stat { 
+pub trait ColorIndex { 
 	const INDEX:u8 = 0;
 	const COLOR_NAME: &'static str;
 }
@@ -182,12 +182,29 @@ impl ColorIndex for Blue {
 
 impl<T> Stat for T where T: ColorIndex {
 	const NAME: &'static str = T::COLOR_NAME;
-	//Get the Luma statistic of a pixel
+
 	fn get(pixel: &image::Rgb<u8>) -> f32 {
 		pixel[Self::INDEX as usize] as f32
 	}
-	//Set the Luma statistic of a pixel
 	fn set(pixel: &mut image::Rgb<u8>, value: f32) -> () {
 		pixel[Self::INDEX as usize] = value as u8;
 	}
 }
+
+/*
+pub trait Distance {
+	const POINT: (u8,u8,u8);
+	const COLOR_NAME: &'static str;
+	fn get_distance(pixel: &image::Rgb<u8>) -> f32 {
+		pixel[Self::INDEX as usize] as f32
+	}
+}
+pub struct RedDistance;
+impl Distance for RedDistance {
+	const POINT: (u8,u8,u8) = (255,0,0);
+	const COLOR_NAME: &'static str = "Red Distance";
+}
+impl Stat for RedDistance {
+	//based on Distance::
+}
+*/
